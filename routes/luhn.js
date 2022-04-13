@@ -1,17 +1,42 @@
 const express = require('express');
-
-var bodyParser = require('body-parser');
-var urlencodedParser = bodyParser.urlencoded( { extended: false } );
+const LuhnService = require('../services/luhn')
 
 function luhnApi(app) {
     const router = express.Router();
     app.use("/luhn", router);
+    const luhnService = LuhnService();
 
     router.get("/", async function(req, res, next){
+        const { body: luhn } = req;
+        console.log('getLuhn', luhn);
         try {
-          res.status(200).json({
-              isValid: isValidNumberCreditCard()
-          });
+            const luhn1 = await luhnService.getLuhn(luhn.luhn);
+            res.status(200).json({
+                luhn: luhn1,
+                message: 'luhn requested'
+            });
+        } catch (err) {
+            next(err);
+        }
+    });
+
+    router.put("/", async function(req, res, next){
+        const { body: number } = req;
+        try {
+            const isValid = await isValidNumberCreditCard(number);
+
+            if (isValid) {
+                const luhnCreated = await luhnService.createLuhn(number);
+
+                res.status(200).json({
+                    data: luhnCreated,
+                    message: 'luhn created successfully'
+                });
+            } else {
+                res.status(200).json({
+                    message: 'the credit card is invalid'
+                });
+            }
         } catch (err) {
             next(err);
         }
