@@ -1,10 +1,10 @@
 const express = require('express');
-const LuhnService = require('../services/luhn')
+const LuhnService = require('../services/luhn');
 
 function luhnApi(app) {
     const router = express.Router();
     app.use("/luhn", router);
-    const luhnService = LuhnService();
+    const luhnService = new LuhnService();
 
     router.get("/", async function(req, res, next){
         const { body: luhn } = req;
@@ -45,9 +45,32 @@ function luhnApi(app) {
     router.post("/", async function(req, res, next){
         const { body: number } = req;
         console.log('req', number);
+        const isValid = await isValidNumberCreditCard(number.data);
         try {
+            if (isValid) {
+                const luhnUpdate = await luhnService.updateLuhn(number);
+                res.status(200).json({
+                    data: luhnUpdate,
+                    message: 'luhn successfully updated'
+                });
+            } else {
+                res.status(200).json({
+                    message: 'the credit card is invalid'
+                });
+            }
+        } catch (err) {
+            next(err);
+        }
+    });
+
+    router.delete("/", async function(req, res, next){
+        const { body: luhn } = req;
+        console.log('Luhn to delete', luhn);
+        try {
+            const luhnDelete = await luhnService.deleteLuhn(luhn.id);
             res.status(200).json({
-                isValid: await isValidNumberCreditCard(number)
+                luhn: luhnDelete,
+                message: 'luhn deleted'
             });
         } catch (err) {
             next(err);
@@ -60,13 +83,13 @@ function luhnApi(app) {
             if (n.number) {
                 resolve((n.number + '').split('').map((i) => { return Number(i); }));
             } else {
-                resolve((n + '').split('').map((i) => { return Number(i); }));
+                resolve((n.number + '').split('').map((i) => { return Number(i); }));
             }
         });
     }
 
     async function luhn(n) {
-        console.log('luhn', n);
+        console.log('lunn', n);
         const number_splitted = await split_numbers(n);
         console.log('number_splitted', number_splitted);
         const number_reversed = number_splitted.reverse();
@@ -82,7 +105,7 @@ function luhnApi(app) {
             } else {
                 result = number_reversed[i] * 2;
                 if (result > 9) {
-                    result = await isGraterThanNine(result);
+                    result = await isGreaterThanNine(result);
                 }
                 results.push(result);
             }
@@ -91,7 +114,7 @@ function luhnApi(app) {
         return results;
     }
 
-    async function isGraterThanNine(result) {
+    async function isGreaterThanNine(result) {
         const value = await split_numbers(result);
         console.log('value', value);
         let plus = 0;
@@ -119,7 +142,5 @@ function luhnApi(app) {
     }
 
 }
-
-
 
 module.exports = luhnApi;
