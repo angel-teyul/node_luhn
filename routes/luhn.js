@@ -45,7 +45,7 @@ function luhnApi(app) {
     router.post("/", async function(req, res, next){
         const { body: number } = req;
         console.log('req', number);
-        const isValid = await isValidNumberCreditCard(number.data);
+        const isValid = await isValidNumberCreditCard(number.number);
         try {
             if (isValid) {
                 const luhnUpdate = await luhnService.updateLuhn(number);
@@ -78,12 +78,11 @@ function luhnApi(app) {
     });
 
     function split_numbers(n) {
-        console.log('split_numbers', n);
         return new Promise((resolve) => {
             if (n.number) {
                 resolve((n.number + '').split('').map((i) => { return Number(i); }));
             } else {
-                resolve((n.number + '').split('').map((i) => { return Number(i); }));
+                resolve((n + '').split('').map((i) => { return Number(i); }));
             }
         });
     }
@@ -116,7 +115,6 @@ function luhnApi(app) {
 
     async function isGreaterThanNine(result) {
         const value = await split_numbers(result);
-        console.log('value', value);
         let plus = 0;
         for (let i=0; i<value.length; i++) {
             plus = plus + parseInt(value[i].toString(),10);
@@ -125,7 +123,6 @@ function luhnApi(app) {
     }
 
     async function isValidNumberCreditCard(n) {
-        console.log('isValidNumberCreditCard', n);
         const results = await luhn(n);
         let isValid = false;
         let plus = 0;
